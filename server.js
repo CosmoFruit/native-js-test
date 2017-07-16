@@ -1,9 +1,16 @@
-var http = require('http');
-var Static = require('node-static');
+var express         = require('express');
+var path            = require('path'); 
+var logger      = require('morgan');
+var bodyParser    = require('body-parser');
+var app       = express();
 var WebSocketServer = new require('ws');
+
 
 // подключенные клиенты
 var clients = {};
+
+// сообщение
+var data;
 
 // WebSocket-сервер на порту 8081
 var webSocketServer = new WebSocketServer.Server({port: 8081});
@@ -29,13 +36,20 @@ webSocketServer.on('connection', function(ws) {
 });
 
 
-// обычный сервер (статика) на порту 8080
-var fileServer = new Static.Server('.');
-http.createServer(function (req, res) {
-  
-  fileServer.serve(req, res);
+// обычный сервер  на порту 8080
+app.use(logger('dev')); // выводит все запросы со статусами в консоль
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({'extended':'false'}));
+app.use(express.static(path.join(__dirname, "")));
 
-}).listen(8080);
+app.post('/pull', function(req, res, next) {      
+      res.json(req.body);
+      console.log(req.body);
+});
 
-console.log("Server started at ports: 8080, 8081 ...");
+app.listen(8080, function(){
+  console.log("Server started at ports: 8080, 8081 ...");
+});
+
+
 

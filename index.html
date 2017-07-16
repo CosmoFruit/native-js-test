@@ -4,7 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="./bootstrap.min.css" rel="stylesheet" />
+
+  <style>
+    .error input,
+    .error textarea {
+      border: 1px solid red;
+    }
+
+    .error {
+      color: red;
+    }
+  </style>
 </head>
+
 <body style="padding-top: 100px;">
 <div class="container">
 	<div class="row">
@@ -15,30 +27,30 @@
 				<div class="form-group">
    					<label for="firstname" class="col-sm-4 control-label">Имя:</label>
    					<div class="col-sm-8">
-						<input type="text" class="form-control" name="firstname"/>
+						<input type="text" class="form-control" name="firstname"/>						
 					</div>
 				</div>
 				<div class="form-group">
    					<label for="lastname"  class="col-sm-4 control-label">Фамилия:</label>
    					<div class="col-sm-8">
-						<input type="text" class="form-control" name="lastname"/>
+						<input type="text" class="form-control" name="lastname"/>						
 					</div>
 				</div>
 				<div class="form-group">
    					<label for="patronymic" class="col-sm-4 control-label">Отчество:</label>
    					<div class="col-sm-8">
-						<input type="text" class="form-control" name="patronymic"/>
+						<input type="text" class="form-control" name="patronymic"/>						
 					</div>
 				</div>	
 				<div class="form-group">
    					<label for="age" class="col-sm-4 control-label">Возраст:</label>
    					<div class="col-sm-8">
-						<input type="number" class="form-control" name="age"/>
+						<input type="number" class="form-control" name="age"/>		
 					</div>
 				</div>
 				<div class="form-group">
     				<div class="col-sm-offset-4 col-sm-8">
-     					<button type="submit" class="btn btn-default">Отпрвить</button>
+     					<button type="submit" class="btn btn-default">Отправить</button>
     				</div>
   				</div>
 			</form>
@@ -50,13 +62,14 @@
 				<p> Транспорт </p>
 				<div 
 					type="button" 
-					class="btn btn-default" 
+					class="btn btn-default active" 
+					id="b-xhr"
 					style="display: block;"
-					onclick="XRH()"	
+					onclick="XHR()"	
 				>XMLHttpRequest</div>
 				<div 
 					type="button" 
-					class="btn btn-default active" 
+					class="btn btn-default" 
 					id="b-w" 
 					style="display: block;"	
 					onclick="WS()"								
@@ -65,6 +78,7 @@
 				<div 
 					type="button" 
 					class="btn btn-default" 
+					id="b-sse"
 					style="display: block;"
 					onclick="SSE()"	
 				>ServerSideEvents</div>
@@ -96,12 +110,12 @@
 				<div class="form-group">
    					<label for="cash" class="col-sm-4 control-label">Баланс:</label>
    					<div class="col-sm-8">
-						<input type="number" class="form-control" name="cash" readonly/>
+						<input type="text" class="form-control" name="cash" readonly/>
 					</div>
 				</div>
 				<div class="form-group">
     				<div class="col-sm-offset-4 col-sm-8">
-     					<button type="submit" class="btn btn-default">Запрос</button>
+     					<button type="submit" id="b-push" class="btn btn-default">Запрос</button>
     				</div>
   				</div>			
 			</form>

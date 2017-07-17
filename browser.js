@@ -10,22 +10,27 @@ var socket;
 var sse;
 
 //Проверка поддержки Вебсокет
-if (!window.WebSocket) {
+if ( !window.WebSocket ) {
 	document.getElementById("b-w").classList.remove("active");
 	document.getElementById("b-w").setAttribute('disabled', 'disabled');
 	document.getElementById("allert-w").classList.remove("hidden");	
 }
 
+//Инициализация траспорта по умолчанию
 XHR();
 
 
+//Дальше секция функций
 function XHR () { 
 	document.getElementById("b-xhr").classList.add("active");
 	document.getElementById("b-w").classList.remove("active");
 	document.getElementById("b-sse").classList.remove("active");
 	document.getElementById("b-push").removeAttribute('disabled');
+  document.getElementById("b-pull").removeAttribute('disabled');
 
-	transport = 0;	
+	transport = 0;
+  if ( socket ) socket.close();
+  if ( sse && sse.readyState !== 2 ) closeSSE();
 }
 
 function WS () { 
@@ -33,14 +38,26 @@ function WS () {
 	document.getElementById("b-w").classList.add("active");
 	document.getElementById("b-sse").classList.remove("active");
 	document.getElementById("b-push").setAttribute('disabled', 'disabled');
-
-	// создать подключение
-	transport = 1;
-	log("Устанавливается Websocket соединение...");
-	socket = new WebSocket("ws://localhost:8081");
-	log("Websocket соединени установлено!");
+  document.getElementById("b-pull").removeAttribute('disabled');
 	
-	// обработчик входящих сообщений Websocket
+	transport = 1;
+  if ( sse && sse.readyState !== 2 ) closeSSE(); 
+
+	log("Websocket установка соединения...");
+	socket = new WebSocket("ws://localhost:8081");
+
+  socket.onopen = function() {
+    log("Websocket соединение установлено!");
+  };
+
+  socket.onclose = function(event) {
+    if (event.wasClean) {
+      log('Websocket cоединение закрыто. Код: ' + event.code);
+    } else {
+      log('Websocket обрыв соединения. Код: ' + event.code);
+    }
+  };
+		
 	socket.onmessage = function(event) {
 		var incomingMessage = event.data;
 		log("Websocket принято сообщение: "+incomingMessage); 
@@ -53,8 +70,46 @@ function SSE () {
 	document.getElementById("b-w").classList.remove("active");
 	document.getElementById("b-sse").classList.add("active");
 	document.getElementById("b-push").setAttribute('disabled', 'disabled');
+  document.getElementById("b-pull").setAttribute('disabled', 'disabled');
 
 	transport = 2;
+  if (socket) socket.close();
+
+  log("SSE установка соединения...");
+  sse = new EventSource("/push/sse");
+
+  sse.onmessage = function(e) {
+      log("SSE принято сообщение: " + e.data);
+      pushForm(e.data);
+  };
+
+  sse.onopen = function(e) {
+      log("SSE соединение открыто.");
+  };
+
+  var count = 1;
+
+  sse.onerror = function(e) {
+      
+      if (count > 5) {
+         closeSSE();
+         count = 1;
+      }
+      if ( this.readyState == EventSource.CONNECTING ) {          
+          log("SSE обрыв соединения, пересоединяемся...попытка " + count);
+          count++;
+      } else {
+          log("SSE ошибка, состояние: " + this.readyState);
+      }
+  };
+}
+
+function closeSSE () {
+        sse.close();
+        log("SSE соединение закрыто. Статус: "+sse.readyState);
+        xhr = new XMLHttpRequest();
+        xhr.open("GET", '/push/close', true);
+        xhr.send();
 }
 
 // отправить сообщение из формы pullform
@@ -96,10 +151,10 @@ document.forms.pullform.onsubmit = function() {
 
     switch (transport) { 
     	case 0: {
-    		log("XHR POST отправлен..."); 
+    		log("XHR POST запрос..."); 
     		xhr = new XMLHttpRequest();
-			xhr.open("POST", '/pull', true);
-			xhr.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+			  xhr.open("POST", '/pull', true);
+			  xhr.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
     		xhr.send(data);
     		xhr.onreadystatechange = function() {
   				if (xhr.readyState != 4) {
@@ -113,7 +168,7 @@ document.forms.pullform.onsubmit = function() {
   				} else {
   					log("Сервер не отвечает...");
   				}
-			}
+			  }
     	}; break;
     	case 1: {     		
   			log("Websocket отправлено сообщение: "+data); 
@@ -127,6 +182,24 @@ document.forms.pullform.onsubmit = function() {
 
 // отправить запрос обновление данных pushform
 document.forms.pushform.onsubmit = function() {
+
+    log("XHR GET запрос...");
+    xhr = new XMLHttpRequest();
+    xhr.open("GET", '/push', true);
+    xhr.send();
+    xhr.onreadystatechange = function() {
+          if (xhr.readyState != 4) {
+            log("Ожидаем ответа сервера...")
+            return false;
+          }   
+          if (xhr.status) {   
+            log("Статус ответа: "+xhr.status + ': ' + xhr.statusText);
+            log("Тело ответа: "+xhr.responseText);
+            pushForm(xhr.responseText);
+          } else {
+            log("Сервер не отвечает...");
+          }
+        }
 	return false;
 }
 
